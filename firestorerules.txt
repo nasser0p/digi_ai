@@ -1,0 +1,185 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===================================================================
+    // HELPER FUNCTIONS
+    // ===================================================================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      // ======================================================================
+      // !! SUPER ADMIN SETUP (STEP 2 of 2) !!
+      // To get database access as Super Admin, you MUST do the following:
+      //
+      // 1. Go to the Firebase Console -> Authentication -> Users tab.
+      // 2. Find your account and copy its "User UID".
+      // 3. Paste that UID here, replacing 'REPLACE_WITH_YOUR_FIREBASE_UID'.
+      //
+      // ==> THIS MUST MATCH THE UID IN `firebase.ts` <==
+      // ======================================================================
+      return isSignedIn() && request.auth.uid == 'REPLACE_WITH_YOUR_FIREBASE_UID';
+    }
+
+    // This function is the single source of truth for checking lock status.
+    function isAccountNotLocked(ownerId) {
+      // It's safe for a new user because their profile doesn't exist yet, so this will be true.
+      return !exists(/databases/$(database)/documents/restaurantProfiles/$(ownerId)) || 
+             get(/databases/$(database)/documents/restaurantProfiles/$(ownerId)).data.isLocked != true;
+    }
+    
+    // Checks if the user is the owner AND is not locked.
+    function isOwnerAndActive(ownerId) {
+        return request.auth.uid == ownerId && isAccountNotLocked(ownerId);
+    }
+    
+    // Checks if the user is a staff member with a specific role and their owner is not locked.
+    // This is a safe function that first checks for document existence before getting data.
+    function isStaffWithRoleAndActive(ownerId, allowedRoles) {
+        let staffDocPath = /databases/$(database)/documents/staff/$(request.auth.uid);
+        return exists(staffDocPath)
+            && get(staffDocPath).data.restaurantId == ownerId
+            && get(staffDocPath).data.role in allowedRoles
+            && isAccountNotLocked(ownerId);
+    }
+    
+    // Helper function to get the restaurant ID for the currently signed-in user
+    // This works whether they are an owner or a staff member.
+    function getRequestingUserRestaurantId() {
+      let staffDocPath = /databases/$(database)/documents/staff/$(request.auth.uid);
+      // Use a ternary operator instead of an if/else block.
+      return exists(staffDocPath) ? get(staffDocPath).data.restaurantId : request.auth.uid;
+    }
+
+    // ===================================================================
+    // DATA ACCESS RULES (for general app use)
+    // ===================================================================
+
+    match /menuItems/{itemId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && (isOwnerAndActive(request.resource.data.userId) || isStaffWithRoleAndActive(request.resource.data.userId, ['admin', 'manager']));
+      allow delete: if isSignedIn() && (isOwnerAndActive(resource.data.userId) || isStaffWithRoleAndActive(resource.data.userId, ['admin', 'manager']));
+    }
+    
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && (isOwnerAndActive(request.resource.data.userId) || isStaffWithRoleAndActive(request.resource.data.userId, ['admin', 'manager']));
+      allow delete: if isSignedIn() && (isOwnerAndActive(resource.data.userId) || isStaffWithRoleAndActive(resource.data.userId, ['admin', 'manager']));
+    }
+
+    match /stores/{storeId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && (isOwnerAndActive(request.resource.data.userId) || isStaffWithRoleAndActive(request.resource.data.userId, ['admin', 'manager']));
+      allow delete: if isSignedIn() && isOwnerAndActive(resource.data.userId);
+    }
+
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if isSignedIn() && (isOwnerAndActive(resource.data.userId) || isStaffWithRoleAndActive(resource.data.userId, ['admin', 'manager', 'front_of_house']));
+      allow delete: if isSignedIn() && (isOwnerAndActive(resource.data.userId) || isStaffWithRoleAndActive(resource.data.userId, ['admin', 'manager']));
+    }
+
+    match /ingredients/{ingredientId} {
+      allow read: if isSignedIn() && (isOwnerAndActive(resource.data.userId) || isStaffWithRoleAndActive(resource.data.userId, ['admin', 'manager', 'kitchen_staff']));
+      allow create, update: if isSignedIn() && (isOwnerAndActive(request.resource.data.userId) || isStaffWithRoleAndActive(request.resource.data.userId, ['admin', 'manager']));
+      allow delete: if isSignedIn() && isOwnerAndActive(resource.data.userId);
+    }
+    
+    match /floorPlans/{userId} {
+      allow read, write: if isSignedIn() && (isOwnerAndActive(userId) || isStaffWithRoleAndActive(userId, ['admin', 'manager']));
+    }
+
+    match /invites/{email} {
+      allow get: if true;
+      // An owner can list their own staff invites.
+      allow list: if isSignedIn() && (isOwnerAndActive(request.query.where.restaurantId));
+      allow create: if isSignedIn() && isOwnerAndActive(request.resource.data.restaurantId) && request.resource.data.role != 'admin' && request.resource.data.email == email;
+      allow delete: if isSignedIn() && (request.auth.token.email == email || isOwnerAndActive(resource.data.restaurantId));
+    }
+    
+    match /promotions/{promotionId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && (isOwnerAndActive(request.resource.data.userId) || isStaffWithRoleAndActive(request.resource.data.userId, ['admin', 'manager']));
+      allow delete: if isSignedIn() && (isOwnerAndActive(resource.data.userId) || isStaffWithRoleAndActive(resource.data.userId, ['admin', 'manager']));
+    }
+    
+    match /customerLoyalty/{customerId} {
+      // Unauthenticated customers can create/update their own loyalty progress.
+      // The client-side logic ensures they can only write to a document where the ID is their phone number.
+      allow create, update: if true;
+
+      // A signed-in user can only read a customer loyalty document if it belongs to their restaurant.
+      // This rule is checked against every document returned by a `list` query.
+      allow get, list: if isSignedIn() && getRequestingUserRestaurantId() == resource.data.userId;
+    }
+    
+    match /taxes/{taxId} {
+        allow read: if isSignedIn() && getRequestingUserRestaurantId() == resource.data.userId;
+        allow write: if isSignedIn() && (isOwnerAndActive(request.resource.data.userId) || isStaffWithRoleAndActive(request.resource.data.userId, ['admin']));
+    }
+    
+    function canAccessReports(ownerId) {
+      return isSignedIn() && (isOwnerAndActive(ownerId) || isStaffWithRoleAndActive(ownerId, ['admin', 'manager']));
+    }
+    
+    match /zReports/{reportId} {
+        allow get: if canAccessReports(resource.data.userId);
+        allow list: if canAccessReports(request.query.where.userId);
+        allow write: if canAccessReports(request.resource.data.userId);
+    }
+
+    match /digimate_conversations/{conversationId} {
+      // A user (owner or staff) can create their own conversations.
+      allow create: if isSignedIn() && request.resource.data.userId == getRequestingUserRestaurantId();
+      // A user can read/update conversations belonging to their restaurant.
+      allow get, list, update: if isSignedIn() && getRequestingUserRestaurantId() == resource.data.userId;
+      // Only super admin can delete to preserve data integrity.
+      allow delete: if isSuperAdmin();
+    }
+    
+    // ===================================================================
+    // PROFILE & LOGIN RULES (REVISED)
+    // ===================================================================
+    
+    match /restaurantProfiles/{userId} {
+      // GET: Publicly readable for customer menus.
+      allow get: if true;
+      
+      // LIST: Only for Super Admin.
+      allow list: if isSuperAdmin();
+      
+      // CREATE: New user can create their own profile.
+      allow create: if request.auth.uid == userId;
+
+      // UPDATE: Can be updated by the owner (if not locked) or Super Admin.
+      allow update: if isSuperAdmin() || (request.auth.uid == userId && isAccountNotLocked(userId));
+      
+      allow delete: if false;
+    }
+    
+    match /staff/{staffId} {
+      // GET: Allow if they are the staff member, their owner, or super admin. NO lock check for login.
+      allow get: if isSignedIn() && (
+        request.auth.uid == staffId ||
+        isSuperAdmin() ||
+        (exists(/databases/$(database)/documents/restaurantProfiles/$(request.auth.uid)) && get(/databases/$(database)/documents/staff/$(staffId)).data.restaurantId == request.auth.uid)
+      );
+
+      // LIST: Owner can list their own staff (client MUST use a `where` clause).
+      // Super Admin can list all staff.
+      allow list: if isSuperAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/restaurantProfiles/$(request.auth.uid)));
+
+      // CREATE: User can create their own staff doc if an invite exists.
+      allow create: if request.auth.uid == staffId && exists(/databases/$(database)/documents/invites/$(request.resource.data.email));
+      
+      // UPDATE: Owner (if not locked) can update staff.
+      allow update: if isOwnerAndActive(resource.data.restaurantId) && request.resource.data.role != 'admin';
+
+      // DELETE: Owner (if not locked) can delete staff.
+      allow delete: if isOwnerAndActive(resource.data.restaurantId);
+    }
+  }
+}

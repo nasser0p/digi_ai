@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DigiPlate Dashboard</title>
+  <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Lora:wght@400;700&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'brand-teal': '#28a7a1',
+            'brand-teal-dark': '#208580',
+            'brand-blue': '#3b82f6',
+            'brand-gray': {
+              50: '#f9fafb',
+              100: '#f3f4f6',
+              200: '#e5e7eb',
+              300: '#d1d5db',
+              400: '#9ca3af',
+              500: '#6b7280',
+              600: '#4b5563',
+              700: '#374151',
+              800: '#1f2937',
+              900: '#111827',
+            },
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        },
+      },
+    }
+  </script>
+<style>
+  /* Customer brand color theming */
+  .bg-brand-customer { background-color: var(--brand-color-customer, #28a7a1); }
+  .hover\:bg-brand-customer-dark:hover { background-color: var(--brand-color-customer-dark, #208580); }
+  .text-brand-customer { color: var(--brand-color-customer, #28a7a1); }
+  .border-brand-customer { border-color: var(--brand-color-customer, #28a7a1); }
+  .ring-brand-customer { --tw-ring-color: var(--brand-color-customer, #28a7a1); }
+  .has-[:checked]:ring-brand-customer {
+    --tw-ring-color: var(--brand-color-customer, #28a7a1) !important;
+  }
+  .has-[:checked]:bg-brand-customer-light:checked {
+    background-color: var(--brand-color-customer-light, #f0fdfa);
+  }
+  .focus\:ring-brand-customer:focus {
+    --tw-ring-color: var(--brand-color-customer, #28a7a1);
+  }
+  .focus\:border-brand-customer:focus {
+     border-color: var(--brand-color-customer, #28a7a1);
+  }
+  .text-brand-customer {
+    color: var(--brand-color-customer, #28a7a1);
+  }
+  .hover\:border-brand-customer:hover {
+     border-color: var(--brand-color-customer, #28a7a1);
+  }
+  input[type="checkbox"].text-brand-customer:checked {
+    background-color: var(--brand-color-customer, #28a7a1);
+  }
+   input[type="radio"].text-brand-customer:checked {
+    background-color: var(--brand-color-customer, #28a7a1);
+  }
+
+  /* Customer appearance theming */
+  .font-modern { font-family: 'Inter', sans-serif; }
+  .font-classic { font-family: 'Lora', serif; }
+  .font-casual { font-family: 'Poppins', sans-serif; }
+  .customer-bg { background-color: var(--customer-bg-color, #f9fafb); }
+  .customer-text { color: var(--customer-text-color, #1f2937); }
+  html.dark .customer-bg { background-color: var(--customer-bg-color, #111827); }
+  html.dark .customer-text { color: var(--customer-text-color, #f9fafb); }
+
+  /* Texture Backgrounds */
+  .bg-texture-dark-marble { background-image: url('https://images.unsplash.com/photo-1593494848039-b9d98bb729f9?w=800&auto=format&fit=crop&q=60'); background-size: cover; background-attachment: fixed; }
+  .bg-texture-light-wood { background-image: url('https://images.unsplash.com/photo-1634712282210-d08b3a16a49d?w=800&auto=format&fit=crop&q=60'); background-size: cover; background-attachment: fixed; }
+  .bg-texture-concrete { background-image: url('https://images.unsplash.com/photo-1594903335543-7f240b151dc1?w=800&auto=format&fit=crop&q=60'); background-size: cover; background-attachment: fixed; }
+  .bg-texture-slate { background-image: url('https://images.unsplash.com/photo-1604147706283-d7119b5b822c?w=800&auto=format&fit=crop&q=60'); background-size: cover; background-attachment: fixed; }
+
+  /* Print utilities */
+  @media print {
+    body {
+      -webkit-print-color-adjust: exact; /* Ensures colors and backgrounds print correctly */
+      color-adjust: exact;
+    }
+    body > *:not(#printable-content):not(#printable-qr-layout) {
+      display: none !important;
+    }
+    #printable-content, #printable-content * {
+      visibility: visible;
+    }
+    #printable-content {
+      /* Centering styles for the ticket */
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      width: 100%;
+      height: 100vh;
+      padding-top: 1rem;
+    }
+    #printable-qr-layout, #printable-qr-layout * {
+      visibility: visible;
+    }
+    #printable-qr-layout {
+      /* Centering styles for the QR layout */
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      width: 100%;
+      padding-top: 1rem;
+    }
+  }
+
+  /* Animations */
+  @keyframes animate-pulse-logo {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.05);
+    }
+  }
+  .animate-pulse-logo {
+    animation: animate-pulse-logo 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-attention {
+    0% {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); /* red-500 */
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+  }
+  .animate-pulse-attention {
+    animation: pulse-attention 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%) skewX(-15deg); }
+    100% { transform: translateX(100%) skewX(-15deg); }
+  }
+  .animate-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .animate-shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0) 100%);
+    animation: shimmer 2.5s infinite;
+  }
+
+  /* Parallax Container */
+  .parallax-container {
+    height: 250px;
+    overflow: hidden;
+    position: relative;
+  }
+  .parallax-bg {
+    width: 100%;
+    height: 400px; /* Taller than container */
+    position: absolute;
+    top: -75px; /* Start centered */
+    left: 0;
+    background-size: cover;
+    background-position: center;
+  }
+
+  /* Backgrounds */
+  .blueprint-bg {
+    background-image:
+      linear-gradient(rgba(209, 213, 219, 0.5) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(209, 213, 219, 0.5) 1px, transparent 1px);
+    background-size: 2rem 2rem;
+  }
+  html.dark .blueprint-bg {
+     background-image:
+      linear-gradient(rgba(55, 65, 81, 0.6) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(55, 65, 81, 0.6) 1px, transparent 1px);
+  }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "firebase/app": "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js",
+    "firebase/storage": "https://www.gstatic.com/firebasejs/11.9.1/firebase-storage.js",
+    "recharts": "https://esm.sh/recharts@2.12.7",
+    "@hello-pangea/dnd": "https://esm.sh/@hello-pangea/dnd@16.5.0",
+    "qrcode": "https://esm.sh/qrcode@1.5.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "firebase/": "https://esm.sh/firebase@^11.9.1/",
+    "path": "https://esm.sh/path@^0.12.7",
+    "vite": "https://esm.sh/vite@^7.0.0",
+    "react-dom": "https://esm.sh/react-dom@^19.1.0",
+    "@firebase/auth": "https://esm.sh/@firebase/auth@^1.11.0",
+    "@google/genai": "https://esm.sh/@google/genai@0.22.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <div id="root"></div>
+  <div id="printable-content"></div>
+  <div id="printable-qr-layout"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

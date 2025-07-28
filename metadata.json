@@ -1,0 +1,6 @@
+{
+  "name": "DigiPlate Dashboard",
+  "description": "A dashboard application for managing restaurant data including orders, revenue, customers, and growth analytics for DigiPlate.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
