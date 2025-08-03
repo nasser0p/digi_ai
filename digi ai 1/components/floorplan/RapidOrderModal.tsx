@@ -185,7 +185,7 @@ const RapidOrderModal: React.FC<RapidOrderModalProps> = ({
                 price: cartItem.basePrice + cartItem.selectedModifiers.reduce((p, c) => p + c.optionPrice, 0),
                 quantity: cartItem.quantity,
                 selectedModifiers: cartItem.selectedModifiers,
-                isDelivered: false,
+                isCompleted: false,
             };
 
             if (cartItem.notes) {

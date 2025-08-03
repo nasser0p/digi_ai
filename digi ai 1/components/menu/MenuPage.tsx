@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, writeBatch, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { MenuItem, Category, Role } from '../../types';
+import { MenuItem, Category, Role, RestaurantProfile } from '../../types';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import MenuItemGrid from './MenuItemGrid';
 import CategoryManager from '../CategoryManager';
 import SlideInPanel from '../ui/SlideInPanel';
-import MenuForm from '../MenuForm';
+import MenuForm from './MenuForm';
 import MenuItemList from './MenuItemList';
 import { GridIcon, ListIcon } from '../icons';
 import TemplateGenerator from '../FirebaseSeed';
@@ -17,12 +17,13 @@ interface MenuPageProps {
     role: Role | null;
     menuItems: MenuItem[];
     categories: Category[];
+    profile: RestaurantProfile | null;
 }
 
 type MenuSubView = 'items' | 'categories';
 type ItemView = 'grid' | 'list';
 
-const MenuPage: React.FC<MenuPageProps> = ({ userId, role, menuItems, categories }) => {
+const MenuPage: React.FC<MenuPageProps> = ({ userId, role, menuItems, categories, profile }) => {
     const { t } = useTranslation();
     const [activeView, setActiveView] = useState<MenuSubView>('items');
     const [itemView, setItemView] = useState<ItemView>('grid');
@@ -207,6 +208,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ userId, role, menuItems, categories
                         userId={userId}
                         categories={categories}
                         menuItems={menuItems}
+                        profile={profile}
                     />
                 )}
             </SlideInPanel>

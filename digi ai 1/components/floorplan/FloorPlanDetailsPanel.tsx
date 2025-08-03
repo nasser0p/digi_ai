@@ -61,14 +61,14 @@ const FloorPlanDetailsPanel: React.FC<FloorPlanDetailsPanelProps> = ({ table, or
                                     <ul className="space-y-2 mt-1">
                                     {order.items.map((item, index) => (
                                         <li key={index}>
-                                            <label className={`flex items-start p-2 rounded-lg cursor-pointer transition-all duration-200 ${item.isDelivered ? 'bg-green-50 dark:bg-green-900/40' : 'bg-brand-gray-50 dark:bg-brand-gray-700/60'}`}>
+                                            <label className={`flex items-start p-2 rounded-lg cursor-pointer transition-all duration-200 ${item.isCompleted ? 'bg-green-50 dark:bg-green-900/40' : 'bg-brand-gray-50 dark:bg-brand-gray-700/60'}`}>
                                                 <input
                                                     type="checkbox"
-                                                    checked={!!item.isDelivered}
-                                                    onChange={() => onUpdateOrderItemStatus(order.id, index, !item.isDelivered)}
+                                                    checked={!!item.isCompleted}
+                                                    onChange={() => onUpdateOrderItemStatus(order.id, index, !item.isCompleted)}
                                                     className="h-5 w-5 mt-0.5 flex-shrink-0 rounded text-brand-teal focus:ring-brand-teal-dark border-gray-300 dark:border-gray-600 dark:bg-brand-gray-700"
                                                 />
-                                                <div className={`mx-4 flex-grow transition-opacity ${item.isDelivered ? 'opacity-50 line-through' : 'opacity-100'}`}>
+                                                <div className={`mx-4 flex-grow transition-opacity ${item.isCompleted ? 'opacity-50 line-through' : 'opacity-100'}`}>
                                                     <div className="font-semibold text-sm">{item.quantity}x {item.name}</div>
                                                     <div className="ps-2 text-xs text-brand-gray-500 dark:text-brand-gray-400 mt-1 space-y-1">
                                                         {item.selectedModifiers.length > 0 && (

@@ -4,7 +4,7 @@ import { useTranslation } from '../../contexts/LanguageContext';
 import { BoxIcon } from '../icons';
 
 interface TableElementProps {
-    table: FloorPlanTable & { status: TableStatus; order?: Order | null };
+    table: FloorPlanTable & { status: TableStatus; orders: Order[] };
     isEditable: boolean;
     onPointerDown?: (e: React.PointerEvent) => void;
     isSelected?: boolean;
@@ -26,14 +26,15 @@ const TableElement: React.FC<TableElementProps> = ({
 }) => {
     const { t } = useTranslation();
     const [timer, setTimer] = useState('');
+    const latestOrder = table.orders && table.orders.length > 0 ? table.orders[0] : null;
 
     useEffect(() => {
-        if (!table.order) {
+        if (!latestOrder) {
             setTimer('');
             return;
         }
 
-        const orderDate = new Date(table.order.createdAt.seconds * 1000);
+        const orderDate = new Date(latestOrder.createdAt.seconds * 1000);
         const updateTimer = () => {
             const seconds = Math.floor((new Date().getTime() - orderDate.getTime()) / 1000);
             const minutes = Math.floor(seconds / 60);
@@ -50,7 +51,7 @@ const TableElement: React.FC<TableElementProps> = ({
         updateTimer();
         const intervalId = setInterval(updateTimer, 1000);
         return () => clearInterval(intervalId);
-    }, [table.order]);
+    }, [latestOrder]);
 
     const statusClasses: Record<TableStatus, string> = {
         available: 'bg-green-500/10 text-green-700 border-green-500/80 dark:bg-green-500/10 dark:text-green-300 dark:border-green-500/60 group-hover:border-green-500 dark:group-hover:border-green-400 group-hover:bg-green-500/20',
@@ -76,13 +77,13 @@ const TableElement: React.FC<TableElementProps> = ({
     };
 
     const renderLiveContent = () => {
-        if (!table.order) {
+        if (!latestOrder) {
             return <span className="text-lg">{table.label}</span>;
         }
 
-        const itemCount = table.order.items.reduce((sum, item) => sum + item.quantity, 0);
-        const deliveredCount = table.order.items.filter(i => i.isDelivered).reduce((sum, item) => sum + item.quantity, 0);
-        const progress = itemCount > 0 ? (deliveredCount / itemCount) * 100 : 0;
+        const totalItems = latestOrder.items.reduce((sum, item) => sum + item.quantity, 0);
+        const completedCount = latestOrder.items.filter(i => i.isCompleted).reduce((sum, item) => sum + item.quantity, 0);
+        const progress = totalItems > 0 ? (completedCount / totalItems) * 100 : 0;
 
         return (
             <div className="w-full h-full p-2 md:p-3 text-left rtl:text-right text-xs flex flex-col justify-between">
@@ -94,10 +95,10 @@ const TableElement: React.FC<TableElementProps> = ({
                 <div className="flex-grow flex flex-col justify-center items-center text-center my-1">
                     <div className="flex items-center gap-1 md:gap-2">
                         <BoxIcon className="w-4 h-4 md:w-5 md:h-5 opacity-80" />
-                        <span className="text-base md:text-lg font-bold">{t('floor_plan_items_count', itemCount)}</span>
+                        <span className="text-base md:text-lg font-bold">{t('floor_plan_items_count', totalItems)}</span>
                     </div>
                     <div className="text-base md:text-lg font-bold text-brand-teal mt-1">
-                        OMR {table.order.total.toFixed(3)}
+                        OMR {latestOrder.total.toFixed(3)}
                     </div>
                 </div>
 

@@ -13,6 +13,8 @@ import {
   LayoutIcon,
   ReceiptIcon,
   MegaphoneIcon,
+  ChefHatIcon,
+  ClipboardCheckIcon,
 } from './icons';
 import { useTranslation } from '../contexts/LanguageContext';
 
@@ -91,6 +93,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activePage, setActivePage, on
     { name: t('sidebar_dashboard'), icon: DashboardIcon, path: '#', pageName: 'Dashboard' },
     { name: t('sidebar_menus'), icon: MenuIcon, path: '#', pageName: 'Menus' },
     { name: t('sidebar_orders'), icon: OrdersIcon, path: '#', pageName: 'Orders' },
+    { name: t('sidebar_kds'), icon: ChefHatIcon, path: '#', pageName: 'Kitchen Display' },
+    { name: t('sidebar_expo'), icon: ClipboardCheckIcon, path: '#', pageName: 'Expo' },
     { name: t('sidebar_floor_plan'), icon: LayoutIcon, path: '#', pageName: 'Floor Plan' },
     { name: t('sidebar_inventory'), icon: BoxIcon, path: '#', pageName: 'Inventory' },
     { name: t('sidebar_stores'), icon: StoreIcon, path: '#', pageName: 'Stores' },
@@ -104,10 +108,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activePage, setActivePage, on
     
     // Define permissions for each role
     const permissions: Record<Role, Page[]> = {
-      admin: ['Dashboard', 'Menus', 'Orders', 'Floor Plan', 'Inventory', 'Stores', 'Promotions', 'Reports', 'Settings'],
-      manager: ['Dashboard', 'Menus', 'Orders', 'Floor Plan', 'Inventory', 'Stores', 'Promotions', 'Reports'],
-      kitchen_staff: ['Orders', 'Inventory'],
-      front_of_house: ['Orders', 'Floor Plan'],
+      admin: ['Dashboard', 'Menus', 'Orders', 'Kitchen Display', 'Expo', 'Floor Plan', 'Inventory', 'Stores', 'Promotions', 'Reports', 'Settings'],
+      manager: ['Dashboard', 'Menus', 'Orders', 'Kitchen Display', 'Expo', 'Floor Plan', 'Inventory', 'Stores', 'Promotions', 'Reports', 'Settings'],
+      kitchen_staff: ['Kitchen Display', 'Inventory'],
+      front_of_house: ['Expo', 'Floor Plan'],
     }
 
     const allowedPages = permissions[role] || [];

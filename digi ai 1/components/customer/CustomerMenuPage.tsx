@@ -317,7 +317,7 @@ const CustomerMenuPage: React.FC<CustomerMenuPageProps> = ({ storeId, restaurant
     const handlePlaceOrder = async () => {
         if (cart.length === 0 || !plateNumber.trim()) return;
         const orderItems: OrderItem[] = cart.map(cartItem => ({
-            name: cartItem.name, menuItemId: cartItem.id, price: cartItem.basePrice + cartItem.selectedModifiers.reduce((p, c) => p + c.optionPrice, 0), quantity: cartItem.quantity, selectedModifiers: cartItem.selectedModifiers, isDelivered: false, notes: cartItem.notes || ''
+            name: cartItem.name, menuItemId: cartItem.id, price: cartItem.basePrice + cartItem.selectedModifiers.reduce((p, c) => p + c.optionPrice, 0), quantity: cartItem.quantity, selectedModifiers: cartItem.selectedModifiers, isCompleted: false, notes: cartItem.notes || ''
         }));
         try {
             const newOrderData: any = { items: orderItems, plateNumber: plateNumber.trim(), subtotal, appliedDiscounts, tip: tipAmount, platformFee, total, taxes: appliedTaxes, taxAmount, status: tableNumber ? 'Pending' : 'New', createdAt: Timestamp.now(), userId: restaurantId, notes: orderNotes.trim(), customerPhoneNumber: customerPhoneNumber.trim() || null };
@@ -545,12 +545,42 @@ const CustomerMenuPage: React.FC<CustomerMenuPageProps> = ({ storeId, restaurant
                     ))
                 )}
             </main>
+
+            <Cart cart={cart} onUpdateQuantity={handleUpdateQuantity} onProceedToCheckout={handleProceedToCheckout} appliedDiscounts={appliedDiscounts} />
+
+            {selectedItem && (
+                <ItemDetailModal item={selectedItem} promotion={selectedPromotion} onClose={() => { setSelectedItem(null); setSelectedPromotion(null); }} onAddToCart={handleAddToCart} />
+            )}
+
+            {toastMessage && (
+                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-brand-gray-900 text-white px-4 py-2 rounded-full text-sm shadow-lg z-30">
+                    {toastMessage}
+                </div>
+            )}
+            
+            {activeOrderIds.length > 0 && (
+                <ActiveOrdersButton orderCount={activeOrderIds.length} onClick={() => setIsTrackingPanelOpen(true)} animate={justOrdered} />
+            )}
             
             {loyaltyPromotions.length > 0 && (
                 <MyRewardsButton onClick={() => setIsRewardsPanelOpen(true)} />
             )}
+
+            <SlideInPanel isOpen={isTrackingPanelOpen} onClose={() => setIsTrackingPanelOpen(false)}>
+                <div className="h-full flex flex-col bg-brand-gray-50 dark:bg-brand-gray-900">
+                    <div className="p-6">
+                        <h2 className="text-xl font-bold text-brand-gray-800 dark:text-white">{t('customer_menu_active_orders_title')}</h2>
+                    </div>
+                    <div className="flex-grow overflow-y-auto p-6 pt-0 space-y-4">
+                        {activeOrderIds.length > 0 ? activeOrderIds.map(id => (
+                            <CustomerOrderTracker key={id} orderId={id} onDismiss={handleDismissOrder} />
+                        )) : <p className="text-center text-sm text-brand-gray-500">{t('customer_menu_no_active_orders')}</p>}
+                    </div>
+                </div>
+            </SlideInPanel>
+            
             <SlideInPanel isOpen={isRewardsPanelOpen} onClose={() => setIsRewardsPanelOpen(false)}>
-                <MyRewardsPanel
+                <MyRewardsPanel 
                     promotions={loyaltyPromotions}
                     loyaltyProgress={customerLoyaltyProgress}
                     menuItems={menuItems}
@@ -559,24 +589,6 @@ const CustomerMenuPage: React.FC<CustomerMenuPageProps> = ({ storeId, restaurant
                     onSetCustomerPhone={handleSetCustomerPhone}
                 />
             </SlideInPanel>
-
-            {(profile?.isLiveTrackingEnabled ?? true) && activeOrderIds.length > 0 && ( <ActiveOrdersButton orderCount={activeOrderIds.length} onClick={() => setIsTrackingPanelOpen(true)} animate={justOrdered} /> )}
-            {(profile?.isLiveTrackingEnabled ?? true) && (
-                <SlideInPanel isOpen={isTrackingPanelOpen} onClose={() => setIsTrackingPanelOpen(false)}>
-                    <div className="h-full flex flex-col bg-brand-gray-50 dark:bg-brand-gray-900">
-                        <h2 className="text-xl font-bold text-brand-gray-800 dark:text-white p-6 pb-2">{t('customer_menu_active_orders_title')}</h2>
-                        <div className="flex-grow overflow-y-auto p-6 pt-2 space-y-4">
-                            {[...activeOrderIds].reverse().map(id => ( <CustomerOrderTracker key={id} orderId={id} onDismiss={handleDismissOrder} /> ))}
-                            {activeOrderIds.length === 0 && <p className="text-center text-brand-gray-500 pt-10">{t('customer_menu_no_active_orders')}</p>}
-                        </div>
-                    </div>
-                </SlideInPanel>
-            )}
-            <Cart cart={cart} appliedDiscounts={appliedDiscounts} onUpdateQuantity={handleUpdateQuantity} onProceedToCheckout={handleProceedToCheckout} />
-            <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${toastMessage ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
-                <div className="bg-brand-gray-800 text-white font-semibold py-2 px-5 rounded-full shadow-lg">{toastMessage}</div>
-            </div>
-            {selectedItem && ( <ItemDetailModal item={selectedItem} promotion={selectedPromotion} onClose={() => { setSelectedItem(null); setSelectedPromotion(null); }} onAddToCart={handleAddToCart} /> )}
         </div>
     );
 };

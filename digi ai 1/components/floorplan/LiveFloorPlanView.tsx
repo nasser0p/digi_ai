@@ -4,8 +4,8 @@ import TableElement from './TableElement';
 
 interface LiveFloorPlanViewProps {
     plan: FloorPlan;
-    tablesWithStatus: (FloorPlanTable & { status: TableStatus; order?: Order | null })[];
-    onSelectTable: (table: FloorPlanTable & { status: TableStatus }) => void;
+    tablesWithStatus: (FloorPlanTable & { status: TableStatus; orders: Order[] })[];
+    onSelectTable: (table: FloorPlanTable & { status: TableStatus; orders: Order[] }) => void;
 }
 
 const LiveFloorPlanView: React.FC<LiveFloorPlanViewProps> = ({ plan, tablesWithStatus, onSelectTable }) => {

@@ -323,3 +323,26 @@ export const BugIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6.75h.008v.008h-.008v-.008zM8.25 6.75h.008v.008H8.25V6.75z" />
   </svg>
 );
+
+export const ChefHatIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 11a8 8 0 1 0 16 0H4Z" />
+        <path d="M6 11V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4" />
+        <path d="M12 7V4" />
+        <path d="M8 4h8" />
+    </svg>
+);
+
+export const ClipboardCheckIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+        <path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z" />
+        <path d="m9 14 2 2 4-4" />
+    </svg>
+);
+
+export const NotePencilIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+    </svg>
+);

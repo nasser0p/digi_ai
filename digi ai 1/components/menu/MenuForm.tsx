@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { doc, setDoc, collection } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase';
-import { MenuItem, Category, ModifierGroup, RecipeItem, Ingredient, RestaurantProfile } from '../types';
-import ModifierManager from './ModifierManager';
-import { useTranslation } from '../contexts/LanguageContext';
-import LinkIngredientModal from './inventory/LinkIngredientModal';
-import { XIcon } from './icons';
+import { db, storage } from '../../firebase';
+import { MenuItem, Category, ModifierGroup, RecipeItem, Ingredient, RestaurantProfile } from '../../types';
+import ModifierManager from '../ModifierManager';
+import { useTranslation } from '../../contexts/LanguageContext';
+import LinkIngredientModal from '../inventory/LinkIngredientModal';
+import { XIcon } from '../icons';
 
 interface MenuFormProps {
   item: MenuItem | null;

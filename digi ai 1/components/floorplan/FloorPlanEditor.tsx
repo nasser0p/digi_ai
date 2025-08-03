@@ -308,7 +308,7 @@ const FloorPlanEditor: React.FC<FloorPlanEditorProps> = ({ planToEdit, onSaveLay
                     {plan.tables.map(table => (
                         <TableElement 
                             key={table.id}
-                            table={{...table, status: 'available'}}
+                            table={{...table, status: 'available', orders: []}}
                             isEditable={true}
                             isSelected={selectedTableId === table.id}
                             onPointerDown={(e) => handlePointerDown(e, table)}
@@ -318,7 +318,7 @@ const FloorPlanEditor: React.FC<FloorPlanEditorProps> = ({ planToEdit, onSaveLay
                     ))}
                     {dragState.current.isDragging && ghostTable && (
                         <TableElement
-                           table={{...ghostTable, status: 'available'}}
+                           table={{...ghostTable, status: 'available', orders: []}}
                            isEditable={true}
                            isGhostPreview={true}
                            hasCollision={ghostTable.hasCollision}

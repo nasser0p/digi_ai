@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo } from 'react';
 import { Order } from '../types';
 import Modal from './Modal';
@@ -18,7 +16,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onP
 
     const allItemsChecked = useMemo(() => {
         if (!order || order.items.length === 0) return false;
-        return order.items.every(item => item.isDelivered);
+        return order.items.every(item => item.isCompleted);
     }, [order]);
 
     return (
@@ -44,14 +42,14 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onP
                     <ul className="space-y-3">
                         {order.items.map((item, index) => (
                             <li key={index}>
-                                <label className={`flex items-start p-3 rounded-lg cursor-pointer transition-all duration-200 ${item.isDelivered ? 'bg-green-50 dark:bg-green-900/40 border-s-4 border-green-400' : 'bg-brand-gray-50 dark:bg-brand-gray-700/60'}`}>
+                                <label className={`flex items-start p-3 rounded-lg cursor-pointer transition-all duration-200 ${item.isCompleted ? 'bg-green-50 dark:bg-green-900/40 border-s-4 border-green-400' : 'bg-brand-gray-50 dark:bg-brand-gray-700/60'}`}>
                                     <input
                                         type="checkbox"
-                                        checked={!!item.isDelivered}
-                                        onChange={() => onUpdateItemStatus(index, !item.isDelivered)}
+                                        checked={!!item.isCompleted}
+                                        onChange={() => onUpdateItemStatus(index, !item.isCompleted)}
                                         className="h-5 w-5 mt-1 rounded text-brand-teal focus:ring-brand-teal-dark border-gray-300 dark:border-gray-600 dark:bg-brand-gray-700"
                                     />
-                                    <div className={`mx-4 flex-grow transition-opacity ${item.isDelivered ? 'opacity-50 line-through' : 'opacity-100'}`}>
+                                    <div className={`mx-4 flex-grow transition-opacity ${item.isCompleted ? 'opacity-50 line-through' : 'opacity-100'}`}>
                                         <div className="font-semibold">{item.quantity}x {item.name}</div>
                                         <div className="text-xs text-brand-gray-500">
                                             {item.selectedModifiers && item.selectedModifiers.length > 0 && (
@@ -62,7 +60,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onP
                                             )}
                                         </div>
                                     </div>
-                                    <div className={`font-semibold transition-opacity ${item.isDelivered ? 'opacity-50 line-through' : 'opacity-100'}`}>
+                                    <div className={`font-semibold transition-opacity ${item.isCompleted ? 'opacity-50 line-through' : 'opacity-100'}`}>
                                         OMR {(item.quantity * item.price).toFixed(3)}
                                     </div>
                                 </label>

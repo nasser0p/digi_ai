@@ -156,7 +156,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ userId, onNewOrder, profile, st
 
         filteredActiveOrders.forEach(order => {
             order.items.forEach(item => {
-                if (item.isDelivered) return;
+                if (item.isCompleted) return;
 
                 const modifiersString = item.selectedModifiers?.map(m => m.optionName).sort().join(', ') || '';
                 const key = `${item.name}::${modifiersString}::${item.notes || 'no-note'}`;
@@ -235,7 +235,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ userId, onNewOrder, profile, st
         if (orderToUpdate) {
             const updatedItems = [...orderToUpdate.items];
             if (updatedItems[itemIndex]) {
-                updatedItems[itemIndex].isDelivered = newStatus;
+                updatedItems[itemIndex].isCompleted = newStatus;
                 await updateDoc(orderRef, { items: updatedItems });
             }
         }

@@ -9,6 +9,7 @@ import ProfileSettings from './settings/ProfileSettings';
 import PrintSettings from './settings/PrintSettings';
 import LoadingSpinner from './ui/LoadingSpinner';
 import TaxSettings from './settings/TaxSettings';
+import KitchenSettings from './settings/KitchenSettings';
 
 interface SettingsPageProps {
     userId: string;
@@ -50,7 +51,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userId, onProfileUpdate, ro
         return <div className="flex justify-center items-center h-full"><LoadingSpinner /></div>;
     }
     
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'manager') {
          return <div className="flex justify-center items-center h-full text-brand-gray-500">{t('common_permission_denied')}</div>;
     }
     
@@ -80,6 +81,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userId, onProfileUpdate, ro
                 return <AppearanceSettings userId={userId} profile={profile} onSave={handleProfileSave} />;
             case 'staff':
                 return <StaffManager ownerId={userId} />;
+            case 'kitchen':
+                return <KitchenSettings userId={userId} profile={profile} onSave={handleProfileSave} />;
             case 'taxes':
                 return <TaxSettings userId={userId} profile={profile} onSave={handleProfileSave} />;
             case 'print':
@@ -95,6 +98,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userId, onProfileUpdate, ro
                 <TabButton view="profile" label={t('settings_tab_profile')} />
                 <TabButton view="appearance" label={t('settings_tab_appearance')} />
                 <TabButton view="staff" label={t('settings_tab_staff')} />
+                <TabButton view="kitchen" label={t('settings_tab_kitchen')} />
                 <TabButton view="taxes" label="Taxes & Fees" />
                 <TabButton view="print" label={t('settings_tab_print')} />
             </div>

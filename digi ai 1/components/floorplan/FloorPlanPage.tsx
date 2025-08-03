@@ -7,36 +7,27 @@ import { useTranslation, LanguageProvider } from '../../contexts/LanguageContext
 import LoadingSpinner from '../ui/LoadingSpinner';
 import FloorPlanEditor from './FloorPlanEditor';
 import LiveFloorPlanView from './LiveFloorPlanView';
-import FloorPlanDetailsPanel from './FloorPlanDetailsPanel';
 import PrintableTicket from '../PrintableTicket';
-
-interface RapidOrderContext {
-    tableNumber: string;
-    orderIdToAppend?: string;
-}
+import { POSContext } from '../../App';
 
 interface FloorPlanPageProps {
     userId: string;
     role: Role | null;
     profile: RestaurantProfile | null;
-    onTableOrder: (context: RapidOrderContext) => void;
-    onTakeawayOrder: () => void;
+    onOpenPOS: (context: Omit<POSContext, 'type'>) => void;
 }
 
-const FloorPlanPage: React.FC<FloorPlanPageProps> = ({ userId, role, profile, onTableOrder, onTakeawayOrder }) => {
+const FloorPlanPage: React.FC<FloorPlanPageProps> = ({ userId, role, profile, onOpenPOS }) => {
     const { t } = useTranslation();
     const [floorPlan, setFloorPlan] = useState<FloorPlan | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
-    const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'live' | 'edit'>('live');
     
-    const [selectedTable, setSelectedTable] = useState<(FloorPlanTable & { status: TableStatus; orders: Order[] }) | null>(null);
     const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
 
 
     const canEdit = role === 'admin' || role === 'manager';
-    const canPlaceOrders = role === 'admin' || role === 'manager' || role === 'front_of_house';
 
     useEffect(() => {
         if (orderToPrint && profile) {
@@ -83,16 +74,10 @@ const FloorPlanPage: React.FC<FloorPlanPageProps> = ({ userId, role, profile, on
             const fetchedOrders = querySnapshot.docs.map(d => ({ ...d.data(), id: d.id } as Order));
             setOrders(fetchedOrders);
         });
-        
-        const menuItemsQuery = query(collection(db, 'menuItems'), where('userId', '==', userId));
-        const unsubMenuItems = onSnapshot(menuItemsQuery, (snapshot) => {
-            setMenuItems(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as MenuItem)));
-        });
 
         return () => {
             unsubPlan();
             unsubOrders();
-            unsubMenuItems();
         };
     }, [userId, loading]);
     
@@ -115,53 +100,24 @@ const FloorPlanPage: React.FC<FloorPlanPageProps> = ({ userId, role, profile, on
             tableOrders.sort((a, b) => a.createdAt.seconds - b.createdAt.seconds);
 
             let status: TableStatus = 'available';
-            if (tableOrders.length > 0) {
-                const hasAttentionOrder = tableOrders.some(o => {
-                    const ageMinutes = (Date.now() - o.createdAt.seconds * 1000) / 60000;
-                    return (o.status === 'New' || o.status === 'In Progress') && ageMinutes > 15;
-                });
-                status = hasAttentionOrder ? 'attention' : 'ordered';
-            } else if (table.status && (table.status === 'seated' || table.status === 'needs_cleaning')) {
-                status = table.status;
+            if (table.status === 'needs_cleaning') {
+                status = 'needs_cleaning';
+            } else if (tableOrders.length > 0) {
+                 const hasReadyOrder = tableOrders.some(o => o.status === 'Ready');
+                 const hasActiveOrder = tableOrders.some(o => o.status === 'In Progress' || o.status === 'New');
+                 if (hasReadyOrder) status = 'attention';
+                 else if (hasActiveOrder) status = 'ordered';
+            } else if (table.status === 'seated') {
+                status = 'seated';
             }
             
-            const taxAmount = tableOrders.reduce((s, o) => s + (o.taxAmount || 0), 0);
-            const aggregatedTaxesMap = new Map<string, AppliedTax>();
-            tableOrders.flatMap(o => o.taxes || []).forEach(tax => {
-                const existing = aggregatedTaxesMap.get(tax.name);
-                if (existing) {
-                    existing.amount += tax.amount;
-                } else {
-                    aggregatedTaxesMap.set(tax.name, { ...tax });
-                }
-            });
-            const taxes = Array.from(aggregatedTaxesMap.values());
-            const appliedDiscounts = tableOrders.flatMap(o => o.appliedDiscounts || []);
-
-            const orderForDisplay: Order | null = tableOrders.length > 0 ? {
-                id: tableOrders.map(o => o.id.substring(0, 4)).join(' | '),
-                items: tableOrders.flatMap(o => o.items),
-                total: tableOrders.reduce((sum, o) => sum + o.total, 0),
-                createdAt: tableOrders[0].createdAt,
-                plateNumber: table.label,
-                userId,
-                status: 'New',
-                subtotal: tableOrders.reduce((s, o) => s + o.subtotal, 0),
-                tip: tableOrders.reduce((s, o) => s + o.tip, 0),
-                taxAmount,
-                taxes,
-                appliedDiscounts,
-                platformFee: tableOrders.reduce((s, o) => s + o.platformFee, 0),
-            } : null;
-
             return { 
                 ...table, 
                 status, 
-                order: orderForDisplay,
                 orders: tableOrders
             };
         });
-    }, [floorPlan, orders, userId]);
+    }, [floorPlan, orders]);
 
 
     const occupancy = useMemo(() => {
@@ -177,11 +133,20 @@ const FloorPlanPage: React.FC<FloorPlanPageProps> = ({ userId, role, profile, on
     }, [orders, floorPlan]);
     
     const handleSelectTable = (table: FloorPlanTable & { status: TableStatus; orders: Order[] }) => {
-        if (role !== 'kitchen_staff' && (table.status === 'available' || table.status === 'seated')) {
-            onTableOrder({ tableNumber: table.label });
-        } else {
-            setSelectedTable(table);
+        if (role === 'kitchen_staff') return;
+
+        if (table.status === 'needs_cleaning') {
+             if (window.confirm(`Clear table ${table.label}?`)) {
+                handleUpdateTableStatus(table.id, 'available');
+            }
+            return;
         }
+
+        const context: Omit<POSContext, 'type'> = {
+            tableNumber: table.label,
+            orderIds: table.orders.map(o => o.id)
+        };
+        onOpenPOS(context);
     };
 
     const handleUpdateTableStatus = async (tableId: string, status: TableStatus) => {
@@ -189,64 +154,8 @@ const FloorPlanPage: React.FC<FloorPlanPageProps> = ({ userId, role, profile, on
         const newTables = floorPlan.tables.map(t => t.id === tableId ? { ...t, status } : t);
         const planRef = doc(db, 'floorPlans', floorPlan.id);
         await updateDoc(planRef, { tables: newTables });
-        setSelectedTable(null);
     };
-
-    const handleUpdateOrderItemStatus = async (orderId: string, itemIndex: number, newStatus: boolean) => {
-        const orderRef = doc(db, 'orders', orderId);
-        const orderToUpdate = orders.find(o => o.id === orderId);
-        
-        if (orderToUpdate) {
-            const updatedItems = [...orderToUpdate.items];
-            if (updatedItems[itemIndex]) {
-                updatedItems[itemIndex].isDelivered = newStatus;
-                await updateDoc(orderRef, { items: updatedItems });
-            }
-        }
-    };
-
-    const handleMarkOrderAsComplete = async (orderIds: string[]) => {
-        const ordersToComplete = orders.filter(o => orderIds.includes(o.id));
-        if (ordersToComplete.length === 0) return;
-
-        const batch = writeBatch(db);
-        const deductions = new Map<string, number>();
-
-        ordersToComplete.forEach(orderToComplete => {
-            orderToComplete.items.forEach(orderItem => {
-                const menuItem = menuItems.find(mi => mi.id === orderItem.menuItemId);
-                if (menuItem?.recipe) {
-                    menuItem.recipe.forEach(recipeItem => {
-                        const totalDeduction = recipeItem.quantity * orderItem.quantity;
-                        deductions.set(recipeItem.ingredientId, (deductions.get(recipeItem.ingredientId) || 0) + totalDeduction);
-                    });
-                }
-            });
-            batch.update(doc(db, 'orders', orderToComplete.id), { status: 'Completed' });
-        });
-
-        deductions.forEach((quantityToDeduction, ingredientId) => {
-            batch.update(doc(db, 'ingredients', ingredientId), { stock: increment(-quantityToDeduction) });
-        });
-        
-        const plateNumber = ordersToComplete[0].plateNumber;
-        if (floorPlan && plateNumber) {
-            const newTables = floorPlan.tables.map(table => 
-                table.label.toUpperCase() === plateNumber.toUpperCase() 
-                ? { ...table, status: 'needs_cleaning' } 
-                : table
-            );
-            batch.update(doc(db, 'floorPlans', userId), { tables: newTables });
-        }
-
-        try {
-            await batch.commit();
-            setSelectedTable(null);
-        } catch (error) {
-            console.error("Failed to complete order:", error);
-        }
-    };
-
+    
     const handleSaveLayout = async (newPlan: FloorPlan) => {
         const planRef = doc(db, 'floorPlans', newPlan.id);
         const tablesToSave = newPlan.tables.map(({ status, ...t }) => t);
@@ -256,41 +165,6 @@ const FloorPlanPage: React.FC<FloorPlanPageProps> = ({ userId, role, profile, on
         setViewMode('live');
     };
     
-    const handlePrintBill = (ordersToPrint: Order[]) => {
-        if (!ordersToPrint || ordersToPrint.length === 0) return;
-
-        const taxAmount = ordersToPrint.reduce((s, o) => s + (o.taxAmount || 0), 0);
-        const aggregatedTaxesMap = new Map<string, { name: string, rate: number, amount: number }>();
-        ordersToPrint.flatMap(o => o.taxes || []).forEach(tax => {
-            const existing = aggregatedTaxesMap.get(tax.name);
-            if (existing) {
-                existing.amount += tax.amount;
-            } else {
-                aggregatedTaxesMap.set(tax.name, { ...tax });
-            }
-        });
-        const taxes = Array.from(aggregatedTaxesMap.values());
-        const appliedDiscounts = ordersToPrint.flatMap(o => o.appliedDiscounts || []);
-
-        const aggregatedOrderForPrint: Order = {
-            id: ordersToPrint.map(o => o.id.substring(0, 4)).join(' | '),
-            plateNumber: ordersToPrint[0].plateNumber,
-            items: ordersToPrint.flatMap(o => o.items),
-            subtotal: ordersToPrint.reduce((s, o) => s + o.subtotal, 0),
-            tip: ordersToPrint.reduce((s, o) => s + o.tip, 0),
-            taxAmount,
-            taxes,
-            appliedDiscounts,
-            platformFee: ordersToPrint.reduce((s, o) => s + o.platformFee, 0),
-            total: ordersToPrint.reduce((s, o) => s + o.total, 0),
-            createdAt: ordersToPrint[0].createdAt,
-            status: 'Ready',
-            userId: userId,
-            storeName: ordersToPrint[0].storeName,
-        };
-        setOrderToPrint(aggregatedOrderForPrint);
-    };
-
     if (loading) {
         return <div className="flex justify-center items-center h-full"><LoadingSpinner /></div>;
     }
@@ -327,14 +201,6 @@ const FloorPlanPage: React.FC<FloorPlanPageProps> = ({ userId, role, profile, on
                             <ViewModeButton label={t('floor_plan_edit_mode')} current={viewMode} target="edit" onClick={() => setViewMode('edit')} />
                         </div>
                      )}
-                     {canPlaceOrders && viewMode === 'live' && (
-                        <button
-                            onClick={onTakeawayOrder}
-                            className="bg-brand-blue hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors"
-                        >
-                            {t('floor_plan_new_takeaway_order')}
-                        </button>
-                     )}
                 </div>
             </div>
             
@@ -347,23 +213,6 @@ const FloorPlanPage: React.FC<FloorPlanPageProps> = ({ userId, role, profile, on
                     onSelectTable={handleSelectTable}
                 />
             )}
-
-            <FloorPlanDetailsPanel 
-                table={selectedTable}
-                orders={selectedTable?.orders || null}
-                onClose={() => setSelectedTable(null)}
-                onUpdateStatus={handleUpdateTableStatus}
-                onUpdateOrderItemStatus={handleUpdateOrderItemStatus}
-                onAppendToOrder={(_orderId, tableNumber) => {
-                    if (selectedTable?.orders && selectedTable.orders.length > 0) {
-                        const latestOrder = selectedTable.orders[selectedTable.orders.length - 1];
-                        onTableOrder({ orderIdToAppend: latestOrder.id, tableNumber })
-                    }
-                }}
-                onPrintBill={handlePrintBill}
-                onMarkAsComplete={handleMarkOrderAsComplete}
-            />
-
         </div>
     );
 };

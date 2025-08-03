@@ -12,7 +12,7 @@ export interface NavItemType {
   path: string;
   active?: boolean;
   subItems?: SubNavItemType[];
-  pageName?: 'Dashboard' | 'Menus' | 'Orders' | 'Floor Plan' | 'Inventory' | 'Stores' | 'Settings' | 'Reports' | 'Promotions';
+  pageName?: 'Dashboard' | 'Menus' | 'Orders' | 'Kitchen Display' | 'Expo' | 'Floor Plan' | 'Inventory' | 'Stores' | 'Settings' | 'Reports' | 'Promotions';
 }
 
 export interface GrowthChartData {
@@ -89,6 +89,8 @@ export interface MenuItem {
   modifierGroups?: ModifierGroup[];
   recipe?: RecipeItem[];
   order: number;
+  prepTimeMinutes?: number;
+  stationName?: string;
 }
 
 export interface SelectedModifier {
@@ -127,7 +129,8 @@ export interface OrderItem {
     price: number; // Final price for this item including modifiers
     selectedModifiers: SelectedModifier[];
     menuItemId: string; // The ID of the menu item this order item corresponds to
-    isDelivered?: boolean;
+    isCompleted?: boolean;
+    inventoryDeducted?: boolean;
     notes?: string;
 }
 
@@ -176,6 +179,29 @@ export interface PrepItem {
         quantity: number;
     }[];
 }
+
+// KDS Summary View Types
+export interface KDSIndividualOrder {
+    orderId: string;
+    itemIndex: number; // The index of the item in the original order's `items` array
+    plateNumber?: string;
+    quantity: number;
+    createdAt: { seconds: number; nanoseconds: number; };
+    prepTimeMinutes?: number;
+    orderStatus: OrderStatus;
+    notes?: string;
+    selectedModifiers?: SelectedModifier[];
+}
+
+export interface KDSItemSummary {
+    menuItemId: string;
+    itemName: string;
+    modifiersString: string; // To group items with the same modifiers together
+    uniqueKey: string; // Combination of itemId and modifiersString
+    totalQuantity: number;
+    individualOrders: KDSIndividualOrder[];
+}
+
 
 export interface PrintSettings {
     headerText: string;
@@ -250,6 +276,7 @@ export interface RestaurantProfile {
     currency?: string;
     languages?: string[];
     onboardingCompleted?: boolean;
+    kitchenStations?: { id: string; name: string }[];
     isLocked?: boolean;
     email?: string;
     createdAt?: {
@@ -391,5 +418,5 @@ export interface DigiMateConversation {
     createdAt: Timestamp;
     messages: ChatMessage[];
     summary?: string;
-    category?: 'question' | 'suggestion' | 'issue';
+    category?: 'question' | 'issue';
 }

@@ -24,10 +24,12 @@ import FloorPlanPage from './components/floorplan/FloorPlanPage';
 import ToastContainer from './components/ui/ToastContainer';
 import ReportsPage from './components/reports/ReportsPage';
 import PromotionsPage from './components/promotions/PromotionsPage';
-import RapidOrderModal from './components/floorplan/RapidOrderModal';
 import DigiMate from './components/DigiMate';
+import KitchenDisplayPage from './components/kitchen/KitchenDisplayPage';
+import ExpoPage from './components/expo/ExpoPage';
+import POSModal from './components/pos/POSModal';
 
-export type Page = 'Dashboard' | 'Menus' | 'Orders' | 'Floor Plan' | 'Inventory' | 'Stores' | 'Settings' | 'Reports' | 'Promotions';
+export type Page = 'Dashboard' | 'Menus' | 'Orders' | 'Kitchen Display' | 'Expo' | 'Floor Plan' | 'Inventory' | 'Stores' | 'Settings' | 'Reports' | 'Promotions';
 
 interface CustomerViewParams {
     storeId?: string;
@@ -35,10 +37,10 @@ interface CustomerViewParams {
     tableNumber?: string;
 }
 
-interface RapidOrderContext {
+export interface POSContext {
     type: 'dine-in' | 'takeaway';
     tableNumber?: string;
-    orderIdToAppend?: string;
+    orderIds?: string[];
 }
 
 
@@ -105,7 +107,7 @@ const App: React.FC = () => {
   const { t } = useTranslation();
 
   // POS Modal State & Centralized Data
-  const [rapidOrderContext, setRapidOrderContext] = useState<RapidOrderContext | null>(null);
+  const [posContext, setPosContext] = useState<POSContext | null>(null);
   const [posMenuItems, setPosMenuItems] = useState<MenuItem[]>([]);
   const [posCategories, setPosCategories] = useState<Category[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -427,11 +429,15 @@ const App: React.FC = () => {
       case 'Dashboard':
         return <Dashboard {...pageProps} stores={stores} />;
       case 'Menus':
-        return <MenuPage {...pageProps} menuItems={posMenuItems} categories={posCategories} />;
+        return <MenuPage {...pageProps} menuItems={posMenuItems} categories={posCategories} profile={profile} />;
       case 'Orders':
         return <OrdersPage {...pageProps} onNewOrder={handleNewOrder} profile={profile} stores={stores} />;
+      case 'Kitchen Display':
+        return <KitchenDisplayPage {...pageProps} profile={profile} menuItems={posMenuItems} />;
+      case 'Expo':
+        return <ExpoPage {...pageProps} menuItems={posMenuItems} ingredients={ingredients} onOpenPOS={setPosContext} />;
       case 'Floor Plan':
-        return <FloorPlanPage {...pageProps} profile={profile} onTableOrder={(context) => setRapidOrderContext({ type: 'dine-in', ...context })} onTakeawayOrder={() => setRapidOrderContext({ type: 'takeaway' })} />;
+        return <FloorPlanPage {...pageProps} profile={profile} onOpenPOS={(context) => setPosContext({ ...context, type: 'dine-in'})} />;
       case 'Inventory':
         return <InventoryPage {...pageProps} ingredients={ingredients} />;
       case 'Stores':
@@ -499,7 +505,7 @@ const App: React.FC = () => {
             userId={restaurantOwnerId || ''}
             profile={profile}
             role={role}
-            onNewPOSOrder={() => setRapidOrderContext({ type: 'takeaway' })}
+            onNewPOSOrder={() => setPosContext({ type: 'takeaway' })}
           />
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-brand-gray-100 dark:bg-brand-gray-800 p-4 sm:p-6 lg:p-8">
             {renderAdminPage()}
@@ -518,13 +524,14 @@ const App: React.FC = () => {
             onReject={handleRejectToast}
             onNavigateToOrders={handleNavigateToOrders}
         />
-        {rapidOrderContext && restaurantOwnerId && (
-            <RapidOrderModal
-                restaurantId={restaurantOwnerId}
-                context={rapidOrderContext}
-                onClose={() => setRapidOrderContext(null)}
+        {posContext && restaurantOwnerId && (
+            <POSModal
+                userId={restaurantOwnerId}
+                context={posContext}
+                onClose={() => setPosContext(null)}
                 menuItems={posMenuItems}
                 categories={posCategories}
+                profile={profile}
             />
         )}
         {restaurantOwnerId && profile && (
